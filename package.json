@@ -1,5 +1,5 @@
 {
-  "name": "recoil-mock",
+  "name": "@babel-jp/recoil-mock",
   "version": "0.1.0",
   "description": "Recoil mocking for tests",
   "main": "dist/index.js",
