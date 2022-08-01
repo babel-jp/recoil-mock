@@ -6,7 +6,9 @@
   "types": "src/index.d.ts",
   "files": [
     "dist",
-    "src"
+    "src",
+    "original-recoil.js",
+    "original-recoil.d.ts"
   ],
   "repository": "https://github.com/babel-jp/recoil-mock.git",
   "author": "uhyo <uhyo@babel.jp>",
