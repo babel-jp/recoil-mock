@@ -10,7 +10,7 @@
   ],
   "repository": "https://github.com/babel-jp/recoil-mock.git",
   "author": "uhyo <uhyo@babel.jp>",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "devDependencies": {
     "@babel/core": "^7.18.9",
     "@babel/preset-env": "^7.18.9",
@@ -30,11 +30,6 @@
   },
   "peerDependencies": {
     "recoil": "^0.7.4"
-  },
-  "imports": {
-    "#recoil": {
-      "require": "./lib/recoil-require.cjs"
-    }
   },
   "scripts": {
     "test": "jest",
