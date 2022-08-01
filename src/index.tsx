@@ -1,4 +1,4 @@
-export * from "./original-recoil";
+export * from "../original-recoil";
 import { useEffect } from "react";
 import {
   atom as _atom,
@@ -7,7 +7,7 @@ import {
   RecoilRoot as OriginalRecoilRoot,
   useRecoilCallback,
   RecoilValueReadOnly,
-} from "./original-recoil";
+} from "../original-recoil";
 
 // テスト用にモック機能を追加したrecoilパッケージ
 
