@@ -9,8 +9,6 @@ import {
   RecoilValueReadOnly,
 } from "../original-recoil";
 
-// テスト用にモック機能を追加したrecoilパッケージ
-
 /**
  * モックされた値を管理するマップ。keyはatom / selectorのkey, valueはモックされた値（無ければモックされていない）
  */
@@ -65,14 +63,13 @@ function wrapWithMockSelector<T, State extends RecoilValue<T>>(
   }) as State;
 }
 
-// ----- recoilのエクスポートを上書き -----
+// ----- re-exporting recoil exports -----
 
 export const atom: typeof _atom = (options) => {
   return wrapWithMockSelector(_atom(options), options);
 };
 atom.value = _atom.value;
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-expect-error
 export const selector: typeof _selector = (options) => {
   return wrapWithMockSelector(_selector(options), options);
@@ -106,10 +103,10 @@ const RecoilRootInternal: React.FC = () => {
   return null;
 };
 
-// ----- recoil-mock独自のエクスポート -----
+// ----- recoil-mock's own exports -----
 
 /**
- * 指定したatom / selectorのmock値を設定する
+ * Mocks given atom/selector with given value.
  */
 export function setRecoilMockValue<T>(
   atomOrSelector: RecoilValue<T>,
@@ -128,7 +125,7 @@ export function setRecoilMockValue<T>(
 }
 
 /**
- * 全てのmock値をクリアする
+ * Clear all mocked values.
  */
 export function clearRecoilMockValues() {
   mockValueMap.clear();

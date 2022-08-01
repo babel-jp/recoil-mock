@@ -1,6 +1,6 @@
 {
-  "name": "@babel-jp/recoil-mock",
-  "version": "0.1.4",
+  "name": "recoil-mock",
+  "version": "0.1.0",
   "description": "Recoil mocking for tests",
   "main": "dist/index.js",
   "types": "src/index.d.ts",
@@ -10,7 +10,6 @@
     "original-recoil.js",
     "original-recoil.d.ts"
   ],
-  "repository": "https://github.com/babel-jp/recoil-mock.git",
   "author": "uhyo <uhyo@babel.jp>",
   "license": "MIT",
   "devDependencies": {
