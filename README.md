@@ -22,7 +22,7 @@ In your `jest.config.js`, map `recoil` to `recoil-mock`. This makes any Recoil s
 }
 ```
 
-In your setup file (maybe `jest.setup.js`), call `clearRecoilMockValues` so that it clears any mock values that were set in previous tests. Alternatively, you can place below code in each test file that mocks Recoil states.
+In your setup file (maybe `jest.setup.js`), call `clearRecoilMockValues` in a `beforeEach` callback so that it clears any mock values that were set in previous tests.
 
 ```js
 const { clearRecoilMockValues } = require('recoil-mock');
@@ -31,6 +31,8 @@ beforeEach(() => {
   clearRecoilMockValues();
 })
 ```
+
+Alternatively, you can place above code in each test file that mocks Recoil states.
 
 ### Mocking Recoil states
 

@@ -10,7 +10,11 @@
     "original-recoil.js",
     "original-recoil.d.ts"
   ],
-  "author": "uhyo <uhyo@babel.jp>",
+  "author": "Babel, Inc. <contact@babel.jp>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/babel-jp/recoil-mock.git"
+  },
   "license": "MIT",
   "devDependencies": {
     "@babel/core": "^7.18.9",
