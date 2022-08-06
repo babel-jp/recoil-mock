@@ -88,6 +88,10 @@ export type RecoilMockContext = {
    * Clears mock value of given atom/selector.
    */
   clear(atomOrSelector: RecoilValue<unknown>): void;
+  /**
+   * Clears all mock values.
+   */
+  clearAll(): void;
 };
 
 // ----- re-exporting recoil exports -----
@@ -186,6 +190,12 @@ export function createRecoilMockContext(): RecoilMockContext {
         throw new Error("No mockSelector registered");
       }
       refresh(mockSelector);
+    },
+    clearAll() {
+      mockValueMap.clear();
+      for (const mockSelector of mockSelectorMap.values()) {
+        refresh(mockSelector);
+      }
     },
   };
 

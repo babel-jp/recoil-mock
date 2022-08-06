@@ -139,6 +139,34 @@ test("Clearing mocks (after rendering)", async () => {
   await findByText("doubled is foofoo");
 });
 
+test("clear mock all", async () => {
+  const { context, wrapper } = createRecoilMockWrapper();
+  const fooAtom = atom({ key: "foo7", default: "foo" });
+  const barAtom = atom({ key: "bar7", default: "bar" });
+  const App = () => {
+    const foo = useRecoilValue(fooAtom);
+    const bar = useRecoilValue(barAtom);
+    return (
+      <div>
+        <p>
+          foobar is {foo}
+          {bar}
+        </p>
+      </div>
+    );
+  };
+
+  context.set(fooAtom, "pika");
+  context.set(barAtom, "chu");
+
+  const { findByText } = render(<App />, { wrapper });
+  await findByText("foobar is pikachu");
+  act(() => {
+    context.clearAll();
+  });
+  await findByText("foobar is foobar");
+});
+
 describe("parallel tests", () => {
   const fooAtom = atom({
     key: "parallel-1",
