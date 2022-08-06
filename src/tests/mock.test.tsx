@@ -1,9 +1,12 @@
 import { act, render } from "@testing-library/react";
+import React from "react";
 import {
   atom,
   createRecoilMockWrapper,
+  RecoilMockContext,
   selector,
   useRecoilValue,
+  RecoilRoot,
 } from "../index";
 
 test("Mock of atom (mocked before rendering)", async () => {
@@ -209,3 +212,60 @@ describe("parallel tests", () => {
     await findByText("foo is bar");
   });
 });
+
+describe("Error Handling", () => {
+  it.skip("Using invalid context", () => {
+    const { errorBox, ErrorBoundary } = getErrorBoundary();
+    const context: RecoilMockContext = {
+      set: () => {},
+      clear: () => {},
+      clearAll: () => {},
+    };
+    const wrapper = ({ children }: { children: React.ReactNode }) => {
+      return (
+        <ErrorBoundary>
+          <RecoilRoot mockContext={context}>{children}</RecoilRoot>
+        </ErrorBoundary>
+      );
+    };
+    const fooAtom = atom({
+      key: "Error Handling/foo1",
+      default: "foo",
+    });
+    const App = () => {
+      const foo = useRecoilValue(fooAtom);
+      return (
+        <div>
+          <p>foo is {foo}</p>
+        </div>
+      );
+    };
+    render(<App />, { wrapper });
+    expect(errorBox.error).toEqual(
+      new Error("mock context is not initialized (mockMaps not found)")
+    );
+  });
+});
+
+function getErrorBoundary() {
+  const errorBox: { error: unknown } = { error: undefined };
+  class ErrorBoundary extends React.Component<{
+    children?: React.ReactNode;
+  }> {
+    state = { error: null };
+    componentDidCatch(error: Error) {
+      this.setState({ error });
+      errorBox.error = error;
+    }
+    render() {
+      if (this.state.error) {
+        return null;
+      }
+      return this.props.children;
+    }
+  }
+  return {
+    errorBox,
+    ErrorBoundary,
+  };
+}
