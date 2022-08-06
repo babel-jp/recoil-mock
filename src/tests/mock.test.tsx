@@ -170,6 +170,35 @@ test("clear mock all", async () => {
   await findByText("foobar is foobar");
 });
 
+test("inner wrapper", async () => {
+  const innerWrapper: React.FC<{
+    children: React.ReactNode;
+  }> = ({ children }) => {
+    return (
+      <div>
+        <p>wrapper!</p>
+        {children}
+      </div>
+    );
+  };
+
+  const fooAtom = atom({ key: "inner wrapper/foo", default: "foo" });
+  const App = () => {
+    const foo = useRecoilValue(fooAtom);
+    return <p>foo is {foo}</p>;
+  };
+
+  const { context, wrapper } = createRecoilMockWrapper(innerWrapper);
+  const { findByText } = render(<App />, { wrapper });
+  await findByText("foo is foo");
+  await findByText("wrapper!");
+  act(() => {
+    context.set(fooAtom, "hey!");
+  });
+  await findByText("foo is hey!");
+  await findByText("wrapper!");
+});
+
 describe("parallel tests", () => {
   const fooAtom = atom({
     key: "parallel-1",

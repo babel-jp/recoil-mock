@@ -1,5 +1,5 @@
 export * from "../original-recoil";
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import {
   atom as _atom,
   selector as _selector,
@@ -209,16 +209,25 @@ export function createRecoilMockContext(): RecoilMockContext {
 
 /**
  * Creates a pair of mock context and wrapper that wraps given React Node with a RecoilRoot with the mock context.
+ *
+ * @param innerWrapper Additional wrapper to wrap the given React Node with.
  */
-export function createRecoilMockWrapper(): {
+export function createRecoilMockWrapper(
+  innerWrapper?: React.JSXElementConstructor<{ children: React.ReactElement }>
+): {
   context: RecoilMockContext;
   wrapper: React.FC<{ children?: React.ReactNode }>;
 } {
   const context = createRecoilMockContext();
+  const W = innerWrapper ?? React.Fragment;
   return {
     context,
     wrapper: ({ children }) => (
-      <RecoilRoot mockContext={context}>{children}</RecoilRoot>
+      <RecoilRoot mockContext={context}>
+        <W>
+          <>{children}</>
+        </W>
+      </RecoilRoot>
     ),
   };
 }
