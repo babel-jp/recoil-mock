@@ -15,11 +15,8 @@ import {
   wrapWithMockSelector,
 } from "./internals";
 
-export {
-  RecoilMockContext,
-  createRecoilMockContext,
-  createRecoilMockWrapper,
-} from "./additions";
+export type { RecoilMockContext } from "./additions";
+export { createRecoilMockContext, createRecoilMockWrapper } from "./additions";
 
 // ----- re-exporting recoil exports -----
 
