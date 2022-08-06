@@ -1,21 +1,15 @@
 import { act, render } from "@testing-library/react";
 import {
   atom,
-  clearRecoilMockValues,
-  RecoilRoot,
+  createRecoilMockWrapper,
   selector,
-  setRecoilMockValue,
-  useRecoilState,
   useRecoilValue,
 } from "../index";
 
-const wrapper: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
-  return <RecoilRoot>{children}</RecoilRoot>;
-};
-
 test("Mock of atom (mocked before rendering)", async () => {
+  const { context, wrapper } = createRecoilMockWrapper();
   const fooAtom = atom({ key: "foo", default: "foo" });
-  setRecoilMockValue(fooAtom, "hey!");
+  context.set(fooAtom, "hey!");
   const App = () => {
     const foo = useRecoilValue(fooAtom);
     return (
@@ -29,6 +23,7 @@ test("Mock of atom (mocked before rendering)", async () => {
 });
 
 test("Mock of atom (mocked after rendering)", async () => {
+  const { context, wrapper } = createRecoilMockWrapper();
   const fooAtom = atom({ key: "foo2", default: "foo" });
   const App = () => {
     const foo = useRecoilValue(fooAtom);
@@ -41,12 +36,13 @@ test("Mock of atom (mocked after rendering)", async () => {
   const { findByText } = render(<App />, { wrapper });
   await findByText("foo is foo");
   act(() => {
-    setRecoilMockValue(fooAtom, "hey!");
+    context.set(fooAtom, "hey!");
   });
   await findByText("foo is hey!");
 });
 
 test("Mock of selector (mocked before rendering)", async () => {
+  const { context, wrapper } = createRecoilMockWrapper();
   const fooAtom = atom({ key: "foo3", default: "foo" });
   const doubleSelector = selector({
     key: "double",
@@ -54,7 +50,7 @@ test("Mock of selector (mocked before rendering)", async () => {
       return get(fooAtom) + get(fooAtom);
     },
   });
-  setRecoilMockValue(doubleSelector, "hey!");
+  context.set(doubleSelector, "hey!");
   const App = () => {
     const doubled = useRecoilValue(doubleSelector);
     return (
@@ -68,6 +64,7 @@ test("Mock of selector (mocked before rendering)", async () => {
 });
 
 test("Mock of selector (mocked after rendering)", async () => {
+  const { context, wrapper } = createRecoilMockWrapper();
   const fooAtom = atom({ key: "foo4", default: "foo" });
   const doubleSelector = selector({
     key: "double2",
@@ -86,12 +83,13 @@ test("Mock of selector (mocked after rendering)", async () => {
   const { findByText } = render(<App />, { wrapper });
   await findByText("doubled is foofoo");
   act(() => {
-    setRecoilMockValue(doubleSelector, "hey!");
+    context.set(doubleSelector, "hey!");
   });
   await findByText("doubled is hey!");
 });
 
 test("Clearing mocks (before rendering)", async () => {
+  const { context, wrapper } = createRecoilMockWrapper();
   const fooAtom = atom({ key: "foo5", default: "foo" });
   const doubleSelector = selector({
     key: "double3",
@@ -108,13 +106,14 @@ test("Clearing mocks (before rendering)", async () => {
     );
   };
 
-  setRecoilMockValue(fooAtom, "hey!");
-  clearRecoilMockValues();
+  context.set(fooAtom, "hey!");
+  context.clear(fooAtom);
   const { findByText } = render(<App />, { wrapper });
   await findByText("doubled is foofoo");
 });
 
 test("Clearing mocks (after rendering)", async () => {
+  const { context, wrapper } = createRecoilMockWrapper();
   const fooAtom = atom({ key: "foo6", default: "foo" });
   const doubleSelector = selector({
     key: "double4",
@@ -131,11 +130,54 @@ test("Clearing mocks (after rendering)", async () => {
     );
   };
 
-  setRecoilMockValue(fooAtom, "hey!");
+  context.set(fooAtom, "hey!");
   const { findByText } = render(<App />, { wrapper });
   await findByText("doubled is hey!hey!");
   act(() => {
-    clearRecoilMockValues();
+    context.clear(fooAtom);
   });
   await findByText("doubled is foofoo");
+});
+
+describe("parallel tests", () => {
+  const fooAtom = atom({
+    key: "parallel-1",
+    default: "foo",
+  });
+  const App = () => {
+    const foo = useRecoilValue(fooAtom);
+    return (
+      <div>
+        <p>foo is {foo}</p>
+      </div>
+    );
+  };
+
+  test("test 1", async () => {
+    const { context, wrapper } = createRecoilMockWrapper();
+    const { findByText } = render(<App />, { wrapper });
+    await findByText("foo is foo");
+    act(() => {
+      context.set(fooAtom, "hey!");
+    });
+    await findByText("foo is hey!");
+  });
+  test("test 2", async () => {
+    const { context, wrapper } = createRecoilMockWrapper();
+    const { findByText } = render(<App />, { wrapper });
+    await findByText("foo is foo");
+    act(() => {
+      context.set(fooAtom, "pika!");
+    });
+    await findByText("foo is pika!");
+  });
+  test("test 3", async () => {
+    const { context, wrapper } = createRecoilMockWrapper();
+    const { findByText } = render(<App />, { wrapper });
+    await findByText("foo is foo");
+    act(() => {
+      context.set(fooAtom, "bar");
+    });
+    await findByText("foo is bar");
+  });
 });

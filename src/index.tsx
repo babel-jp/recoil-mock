@@ -7,18 +7,26 @@ import {
   RecoilRoot as OriginalRecoilRoot,
   useRecoilCallback,
   RecoilValueReadOnly,
+  MutableSnapshot,
+  useRecoilValue,
 } from "../original-recoil";
 
-/**
- * モックされた値を管理するマップ。keyはatom / selectorのkey, valueはモックされた値（無ければモックされていない）
- */
-const mockValueMap = new Map<string, unknown>();
+const nonMockedDefaultValue = Symbol("NonMockedDefaultValue");
+
 const mockSelectorMap = new Map<string, RecoilValueReadOnly<unknown>>();
-const refreshCallbacks = new Set<
-  (state: RecoilValueReadOnly<unknown>) => void
+
+const contextToMockMaps = new WeakMap<
+  RecoilMockContext,
+  {
+    mockValueMap: Map<string, unknown>;
+    refreshCallbacks: Set<(state: RecoilValueReadOnly<unknown>) => void>;
+  }
 >();
 
-const nonMockedDefaultValue = Symbol("NonMockedDefaultValue");
+const mockContextAtom = _atom<RecoilMockContext | undefined>({
+  key: "__recoil-mock__mockContext",
+  default: undefined,
+});
 
 /**
  * 与えられたstateをモック可能にする
@@ -32,9 +40,18 @@ function wrapWithMockSelector<T, State extends RecoilValue<T>>(
   const resultKey = state.key + "___mock_selector";
   const mockSelector = _selector<T | typeof nonMockedDefaultValue>({
     key: state.key + "___mock_value",
-    get() {
-      if (mockValueMap.has(resultKey)) {
-        return mockValueMap.get(resultKey) as T;
+    get({ get }) {
+      const mockContext = get(mockContextAtom);
+      if (mockContext === undefined) {
+        // not mocked
+        return nonMockedDefaultValue;
+      }
+      const mockMaps = contextToMockMaps.get(mockContext);
+      if (mockMaps === undefined) {
+        throw new Error("mock context is not initialized (mockMaps not found)");
+      }
+      if (mockMaps.mockValueMap.has(resultKey)) {
+        return mockMaps.mockValueMap.get(resultKey) as T;
       }
       return nonMockedDefaultValue;
     },
@@ -43,7 +60,6 @@ function wrapWithMockSelector<T, State extends RecoilValue<T>>(
 
   mockSelectorMap.set(resultKey, mockSelector);
 
-  // mockAtomの値が設定されていたらそちらを常に返す
   return _selector<T>({
     key: resultKey,
     get: ({ get }) => {
@@ -54,7 +70,7 @@ function wrapWithMockSelector<T, State extends RecoilValue<T>>(
       return get(state);
     },
     set: ({ set }, value) => {
-      // `state` がreadonlyだった場合はsetできないが、その場合は型で制御されて防がれているので大丈夫
+      // `state` cannot be set if it is read-only, but that case is prevented by types
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-expect-error
       set(state, value);
@@ -62,6 +78,17 @@ function wrapWithMockSelector<T, State extends RecoilValue<T>>(
     dangerouslyAllowMutability: !!options.dangerouslyAllowMutability,
   }) as State;
 }
+
+export type RecoilMockContext = {
+  /**
+   * Mocks given atom/selector with given value.
+   */
+  set<T>(atomOrSelector: RecoilValue<T>, value: T): void;
+  /**
+   * Clears mock value of given atom/selector.
+   */
+  clear(atomOrSelector: RecoilValue<unknown>): void;
+};
 
 // ----- re-exporting recoil exports -----
 
@@ -76,12 +103,24 @@ export const selector: typeof _selector = (options) => {
 };
 selector.value = _selector.value;
 
-export const RecoilRoot: typeof OriginalRecoilRoot = ({
+type RecoilRootProps = React.ComponentProps<typeof OriginalRecoilRoot> & {
+  mockContext?: RecoilMockContext;
+};
+
+export const RecoilRoot: React.FC<RecoilRootProps> = ({
   children,
+  mockContext,
   ...props
 }) => {
+  if (props.override === false) {
+    return <OriginalRecoilRoot {...props}>{children}</OriginalRecoilRoot>;
+  }
+  const initializeState = (snapshot: MutableSnapshot) => {
+    props.initializeState?.(snapshot);
+    snapshot.set(mockContextAtom, mockContext);
+  };
   return (
-    <OriginalRecoilRoot {...props}>
+    <OriginalRecoilRoot {...props} initializeState={initializeState}>
       <RecoilRootInternal />
       {children}
     </OriginalRecoilRoot>
@@ -92,46 +131,84 @@ export const RecoilRoot: typeof OriginalRecoilRoot = ({
  * RecoilRootがレンダリングされている間、refresh関数をrefreshCallbacksに登録するためのコンポーネント
  */
 const RecoilRootInternal: React.FC = () => {
+  const mockContext = useRecoilValue(mockContextAtom);
   const refresh = useRecoilCallback(({ refresh }) => refresh, []);
 
   useEffect(() => {
-    refreshCallbacks.add(refresh);
+    if (mockContext === undefined) {
+      return;
+    }
+    const mockMaps = contextToMockMaps.get(mockContext);
+    if (mockMaps === undefined) {
+      throw new Error("mock context is not initialized (mockMaps not found)");
+    }
+
+    mockMaps.refreshCallbacks.add(refresh);
     return () => {
-      refreshCallbacks.delete(refresh);
+      mockMaps.refreshCallbacks.delete(refresh);
     };
-  }, [refresh]);
+  }, [mockContext, refresh]);
   return null;
 };
 
 // ----- recoil-mock's own exports -----
 
 /**
- * Mocks given atom/selector with given value.
+ * Creates a RecoilMockContext.
  */
-export function setRecoilMockValue<T>(
-  atomOrSelector: RecoilValue<T>,
-  value: T
-) {
-  mockValueMap.set(atomOrSelector.key, value);
-  const mockSelector = mockSelectorMap.get(atomOrSelector.key);
-  /* istanbul ignore if */
-  if (!mockSelector) {
-    throw new Error("No mockSelector registered");
+export function createRecoilMockContext(): RecoilMockContext {
+  const mockValueMap = new Map<string, unknown>();
+  const refreshCallbacks = new Set<
+    (state: RecoilValueReadOnly<unknown>) => void
+  >();
+
+  function refresh(selector: RecoilValueReadOnly<unknown>) {
+    for (const callback of refreshCallbacks) {
+      callback(selector);
+    }
   }
 
-  for (const refresh of refreshCallbacks) {
-    refresh(mockSelector);
-  }
+  const context: RecoilMockContext = {
+    set(atomOrSelector, value) {
+      mockValueMap.set(atomOrSelector.key, value);
+      const mockSelector = mockSelectorMap.get(atomOrSelector.key);
+      /* istanbul ignore if */
+      if (!mockSelector) {
+        throw new Error("No mockSelector registered");
+      }
+      refresh(mockSelector);
+    },
+    clear(atomOrSelector) {
+      mockValueMap.delete(atomOrSelector.key);
+      const mockSelector = mockSelectorMap.get(atomOrSelector.key);
+      /* istanbul ignore if */
+      if (!mockSelector) {
+        throw new Error("No mockSelector registered");
+      }
+      refresh(mockSelector);
+    },
+  };
+
+  contextToMockMaps.set(context, {
+    mockValueMap,
+    refreshCallbacks,
+  });
+
+  return context;
 }
 
 /**
- * Clear all mocked values.
+ * Creates a pair of mock context and wrapper that wraps given React Node with a RecoilRoot with the mock context.
  */
-export function clearRecoilMockValues() {
-  mockValueMap.clear();
-  for (const refresh of refreshCallbacks) {
-    for (const selector of mockSelectorMap.values()) {
-      refresh(selector);
-    }
-  }
+export function createRecoilMockWrapper(): {
+  context: RecoilMockContext;
+  wrapper: React.FC<{ children?: React.ReactNode }>;
+} {
+  const context = createRecoilMockContext();
+  return {
+    context,
+    wrapper: ({ children }) => (
+      <RecoilRoot mockContext={context}>{children}</RecoilRoot>
+    ),
+  };
 }
