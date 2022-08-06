@@ -22,33 +22,38 @@ In your `jest.config.js`, map `recoil` to `recoil-mock`. This makes any Recoil s
 }
 ```
 
-In your setup file (maybe `jest.setup.js`), call `clearRecoilMockValues` in a `beforeEach` callback so that it clears any mock values that were set in previous tests.
-
-```js
-const { clearRecoilMockValues } = require('recoil-mock');
-
-beforeEach(() => {
-  clearRecoilMockValues();
-})
-```
-
-Alternatively, you can place above code in each test file that mocks Recoil states.
-
 ### Mocking Recoil states
 
-You can mock values of both Recoil atoms and selectors by calling `setRecoilMockValue`.
+In each test case, call `createRecoilMockWrapper` to create a pair of a mock context and a wrapper that wraps your component with a customized `RecoilRoot`.
+
+The mock context provides methods `set`, `clear` and `clearAll` to modify mocked value of any Recoil atom or selector.
 
 ```js
+import { act, render } from "@testing-library/react";
 import { setRecoilMockValue } from 'recoil-mock';
 
-test('mock Recoil atom', () => {
-  setRecoilMockValue(myAtom, 'mocked value');
-  render(<MyApp />);
+const fooAtom = atom({ key: 'foo', default: 'foo' })
+// App for testing
+const MyApp = () => {
+  const foo = useRecoilValue(fooAtom);
+  return (
+    <div>foo is {foo}</div>
+  );
+};
+
+test('mock Recoil atom', async () => {
+  const { context, wrapper } = createRecoilMockWrapper();
+  context.set(fooAtom, 'bar');
+  const { findByText } = render(<MyApp />, { wrapper });
+  // The mocked value is applied
+  await findByText('foo is bar');
+
   // If you update mocked value after rendering, you should wrap it in an `act` call.
   act(() => {
-    setRecoilMockValue(myAtom, 'new mocked value');
+    context.set(fooAtom, 'pika!');
   });
   // Your app should have reflected to the update here.
+  await findByText('foo is pika!');
 });
 ```
 
