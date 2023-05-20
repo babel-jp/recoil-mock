@@ -30,7 +30,7 @@ The mock context provides methods `set`, `clear` and `clearAll` to modify mocked
 
 ```js
 import { act, render } from "@testing-library/react";
-import { setRecoilMockValue } from 'recoil-mock';
+import { createRecoilMockWrapper } from 'recoil-mock';
 
 const fooAtom = atom({ key: 'foo', default: 'foo' })
 // App for testing
