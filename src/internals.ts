@@ -33,7 +33,7 @@ export function wrapWithMockSelector<T, State extends RecoilValue<T>>(
   state: State,
   options: {
     dangerouslyAllowMutability?: boolean;
-  }
+  },
 ): State {
   const resultKey = state.key + "___mock_selector";
   const mockSelector = _selector<T | typeof nonMockedDefaultValue>({

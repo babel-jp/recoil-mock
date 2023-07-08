@@ -271,7 +271,7 @@ describe("Error Handling", () => {
     };
     render(<App />, { wrapper });
     expect(errorBox.error).toEqual(
-      new Error("mock context is not initialized (mockMaps not found)")
+      new Error("mock context is not initialized (mockMaps not found)"),
     );
   });
 });

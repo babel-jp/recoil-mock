@@ -67,7 +67,7 @@ export function createRecoilMockContext(): RecoilMockContext {
  * @param innerWrapper Additional wrapper to wrap the given React Node with.
  */
 export function createRecoilMockWrapper(
-  innerWrapper?: React.JSXElementConstructor<{ children: React.ReactElement }>
+  innerWrapper?: React.JSXElementConstructor<{ children: React.ReactElement }>,
 ): {
   context: RecoilMockContext;
   wrapper: React.FC<{ children?: React.ReactNode }>;

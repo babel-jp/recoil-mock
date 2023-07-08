@@ -14,7 +14,7 @@ First install by:
 npm install -D recoil-mock
 ```
 
-In your `jest.config.js`, map `recoil` to `recoil-mock`. This makes any Recoil state in your codebase mockable. 
+In your `jest.config.js`, map `recoil` to `recoil-mock`. This makes any Recoil state in your codebase mockable.
 
 ```json
 "moduleNameMapper": {
@@ -30,33 +30,30 @@ The mock context provides methods `set`, `clear` and `clearAll` to modify mocked
 
 ```js
 import { act, render } from "@testing-library/react";
-import { createRecoilMockWrapper } from 'recoil-mock';
+import { createRecoilMockWrapper } from "recoil-mock";
 
-const fooAtom = atom({ key: 'foo', default: 'foo' })
+const fooAtom = atom({ key: "foo", default: "foo" });
 // App for testing
 const MyApp = () => {
   const foo = useRecoilValue(fooAtom);
-  return (
-    <div>foo is {foo}</div>
-  );
+  return <div>foo is {foo}</div>;
 };
 
-test('mock Recoil atom', async () => {
+test("mock Recoil atom", async () => {
   const { context, wrapper } = createRecoilMockWrapper();
-  context.set(fooAtom, 'bar');
+  context.set(fooAtom, "bar");
   const { findByText } = render(<MyApp />, { wrapper });
   // The mocked value is applied
-  await findByText('foo is bar');
+  await findByText("foo is bar");
 
   // If you update mocked value after rendering, you should wrap it in an `act` call.
   act(() => {
-    context.set(fooAtom, 'pika!');
+    context.set(fooAtom, "pika!");
   });
   // Your app should have reflected to the update here.
-  await findByText('foo is pika!');
+  await findByText("foo is pika!");
 });
 ```
-
 
 ## For maintainers
 
