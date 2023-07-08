@@ -243,7 +243,7 @@ describe("parallel tests", () => {
 });
 
 describe("Error Handling", () => {
-  it.skip("Using invalid context", () => {
+  it("Using invalid context", () => {
     const { errorBox, ErrorBoundary } = getErrorBoundary();
     const context: RecoilMockContext = {
       set: () => {},
