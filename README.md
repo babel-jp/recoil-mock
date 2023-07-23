@@ -22,7 +22,7 @@ In your `jest.config.js`, map `recoil` to `recoil-mock`. This makes any Recoil s
 }
 ```
 
-### Mocking Recoil states
+### Mocking Recoil atoms
 
 In each test case, call `createRecoilMockWrapper` to create a pair of a mock context and a wrapper that wraps your component with a customized `RecoilRoot`.
 
@@ -54,6 +54,71 @@ test("mock Recoil atom", async () => {
   await findByText("foo is pika!");
 });
 ```
+
+### Mocking Recoil selectors
+
+With `recoil-mock`, you can mock selectors as well. You can apply mocked values directly to any selector without touching its dependencies. When a selector is mocked, its dependencies are not evaluated. 
+
+```js
+import { act, render } from "@testing-library/react";
+import { createRecoilMockWrapper } from "recoil-mock";
+
+const fooAtom = atom({ key: "foo", default: "foo" });
+const barAtom = atom({ key: "bar", default: "bar" });
+const fooBarSelector = selector({
+  key: "fooBar",
+  get: ({ get }) => get(fooAtom) + get(barAtom),
+});
+// App for testing
+const MyApp = () => {
+  const fooBar = useRecoilValue(fooBarSelector);
+  return <div>fooBar is {fooBar}</div>;
+};
+
+test("mock Recoil selector", async () => {
+  const { context, wrapper } = createRecoilMockWrapper();
+  context.set(fooBarSelector, "pika!");
+  const { findByText } = render(<MyApp />, { wrapper });
+  // The mocked value is applied
+  await findByText("fooBar is pika!");
+});
+```
+
+### Mocking atom/selector families
+
+When you want to mock an atom family or a selector family, you mock individual atoms/selectors created by the family. 
+  
+```js
+import { act, render } from "@testing-library/react";
+import { createRecoilMockWrapper } from "recoil-mock";
+
+const fooAtom = atom({
+  key: "foo",
+  default: "foo",
+});
+const repeatedFooFamily = selectorFamily({
+  key: "repeatedFooFamily",
+  get: (times) => ({ get }) => get(fooAtom).repeat(times),
+});
+// App for testing
+const MyApp = () => {
+  const repeatedFoo = useRecoilValue(repeatedFooFamily(3));
+  return <div>repeatedFoo is {repeatedFoo}</div>;
+};
+
+test("mock Recoil selector family", async () => {
+  const { context, wrapper } = createRecoilMockWrapper();
+  const { findByText } = render(<MyApp />, { wrapper });
+  await findByText("repeatedFoo is foofoofoo");
+
+  act(() => {
+    context.set(repeatedFooFamily(3), "pika!");
+  });
+  // The mocked value is applied
+  await findByText("repeatedFoo is pika!");
+});
+```
+
 
 ## For maintainers
 
