@@ -126,6 +126,6 @@ test("mock Recoil selector family", async () => {
 
 Just build and publish locally. :sweat_smile:
 
-## Liecnse
+## License
 
 [MIT](./LICENSE)
