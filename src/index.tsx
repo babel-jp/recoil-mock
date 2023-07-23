@@ -3,6 +3,8 @@ import React, { useEffect } from "react";
 import {
   atom as _atom,
   selector as _selector,
+  atomFamily as _atomFamily,
+  selectorFamily as _selectorFamily,
   RecoilRoot as OriginalRecoilRoot,
   useRecoilCallback,
   MutableSnapshot,
@@ -33,6 +35,43 @@ selector.value = _selector.value;
 
 type RecoilRootProps = React.ComponentProps<typeof OriginalRecoilRoot> & {
   mockContext?: RecoilMockContext;
+};
+
+export const atomFamily: typeof _atomFamily = (options) => {
+  const originalFamily = _atomFamily(options);
+  const wrappedMap = new WeakMap<
+    ReturnType<typeof originalFamily>,
+    ReturnType<typeof originalFamily>
+  >();
+  return (param) => {
+    const original = originalFamily(param);
+    const cached = wrappedMap.get(original);
+    if (cached !== undefined) {
+      return cached;
+    }
+    const wrapped = wrapWithMockSelector(original, options);
+    wrappedMap.set(original, wrapped);
+    return wrapped;
+  };
+};
+
+// @ts-expect-error
+export const selectorFamily: typeof _selectorFamily = (options) => {
+  const originalFamily = _selectorFamily(options);
+  const wrappedMap = new WeakMap<
+    ReturnType<typeof originalFamily>,
+    ReturnType<typeof originalFamily>
+  >();
+  return (param) => {
+    const original = originalFamily(param);
+    const cached = wrappedMap.get(original);
+    if (cached !== undefined) {
+      return cached;
+    }
+    const wrapped = wrapWithMockSelector(original, options);
+    wrappedMap.set(original, wrapped);
+    return wrapped;
+  };
 };
 
 export const RecoilRoot: React.FC<RecoilRootProps> = ({
