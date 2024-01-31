@@ -1,6 +1,6 @@
 {
   "name": "recoil-mock",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Recoil mocking for tests",
   "main": "dist/index.js",
   "types": "src/index.d.ts",
