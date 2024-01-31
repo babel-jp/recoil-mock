@@ -2,11 +2,7 @@ import {
   atom as _atom,
   selector as _selector,
   RecoilValue,
-  RecoilRoot as OriginalRecoilRoot,
-  useRecoilCallback,
   RecoilValueReadOnly,
-  MutableSnapshot,
-  useRecoilValue,
 } from "../original-recoil";
 
 export const nonMockedDefaultValue = Symbol("NonMockedDefaultValue");
